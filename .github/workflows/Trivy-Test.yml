@@ -1,36 +1,63 @@
-# This is a basic workflow to help you get started with Actions
+name: "Trivy-Test"
 
-name: CI
-
-# Controls when the workflow will run
-on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
-  # Allows you to run this workflow manually from the Actions tab
+on: 
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+  Job1:
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
+    
+      # checkout the repo
+      - name: "Checkout GitHub Action"
+        uses: actions/checkout@main
+      
+      # setup dotnet
+      - uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: |
+              5.0.x
+              6.0.x
+              
+      # Docker Pull
+      - name: Docker pull
+        run: docker pull vulnerables/web-dvwa:latest
+        
+      # Microsoft Security DevOps ツールの実行
+      # Run analyzers
+      - name: Run Microsoft Security DevOps Analysis
+        uses: microsoft/security-devops-action@preview
+        id: msdo
+        env:
+          GDN_TRIVY_ACTION: image
+          GDN_TRIVY_TARGET: vulnerables/web-dvwa:latest
+        with:
+          categories: "containers" 
+          tools: "Trivy"
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
+    # Upload alerts to the Security tab
+      - name: Upload alerts to Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: ${{ steps.msdo.outputs.sarifFile }}
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
-        run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+    # Upload alerts file as a workflow artifact
+      - name: Upload alerts file as a workflow artifact
+        uses: actions/upload-artifact@v3
+        with:  
+          name: alerts
+          path: ${{ steps.msdo.outputs.sarifFile }}
+
+      # # Upload alerts to the Security tab
+      # - name: Upload alerts to Security tab
+      #   uses: github/codeql-action/upload-sarif@v1
+      #   with:
+      #     sarif_file: "${{ github.workspace }}/.gdn/.r/trivy/001/trivy.sarif"
+          
+      # # Upload alerts file as a workflow artifact        
+      # - name: Upload alerts file as a workflow artifact
+      #   uses: actions/upload-artifact@v3
+      #   with:  
+      #     name: alerts
+      #     path: "${{ github.workspace }}/.gdn/.r/trivy/001/trivy.sarif"
+
