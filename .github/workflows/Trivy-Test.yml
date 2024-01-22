@@ -9,15 +9,8 @@ jobs:
     steps:
     
       # checkout the repo
-      - name: "Checkout GitHub Action"
-        uses: actions/checkout@main
-      
-      # setup dotnet
-      - uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: |
-              5.0.x
-              6.0.x
+      - name: Checkout GitHub Action
+        uses: actions/checkout@v3
               
       # Docker Pull
       - name: Docker pull
@@ -26,7 +19,7 @@ jobs:
       # Microsoft Security DevOps ツールの実行
       # Run analyzers
       - name: Run Microsoft Security DevOps Analysis
-        uses: microsoft/security-devops-action@preview
+        uses: microsoft/security-devops-action@latest
         id: msdo
         env:
           GDN_TRIVY_ACTION: image
